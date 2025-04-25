@@ -1,0 +1,27 @@
+#!/bin/bash
+
+USER="user"
+PASSWORD="1"
+
+if [ "$#" -lt 2 ]; then
+    echo "use \"import database-name dump-file\""
+    exit 1
+fi
+
+DB_NAME="$1"
+DUMP_FILE="$2"
+
+if [ ! -f "$DUMP_FILE" ]; then
+    echo "$DUMP_FILE does not exist"
+    exit 1
+fi
+
+TMP_FILE=$(mktemp)
+
+echo "DROP DATABASE IF EXISTS \`$DB_NAME\`; CREATE DATABASE \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; USE \`$DB_NAME\`;" >"$TMP_FILE"
+cat "$DUMP_FILE" >>"$TMP_FILE"
+mariadb --user="$USER" --password="$PASSWORD" <"$TMP_FILE"
+rm "$TMP_FILE"
+echo "done - $1"
+
+exit 0

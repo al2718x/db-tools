@@ -1,0 +1,41 @@
+#!/bin/bash
+
+APP_DIR=/app
+USER="user"
+PASSWORD="1"
+DB_F="${APP_DIR}/.db-list"
+IGNORE_F="${APP_DIR}/.db-ignore"
+IGNORE_LIST=()
+
+if [ -f "$IGNORE_F" ]; then
+    N=0
+    while read LINE; do
+        IGNORE_LIST[$N]="$LINE"
+        let N=$N+1
+    done <"$IGNORE_F"
+fi
+
+mysql --user="$USER" --password="$PASSWORD" --skip-column-names --silent --execute='show databases;' >"$DB_F"
+
+if [ -f "$DB_F" ]; then
+    N=0
+    while read LINE; do
+        FLAG=0
+        for VAL in "${IGNORE_LIST[@]}"; do
+            if [[ $LINE == $VAL ]]; then
+                FLAG=1
+            fi
+        done
+        if [ $FLAG -eq 0 ]; then
+            printf "${LINE}..."
+            if [ -e "${APP_DIR}/${LINE}".sql.gz ]; then
+                rm "${APP_DIR}/${LINE}".sql.gz
+            fi
+            mariadb-dump --user="$USER" --password="$PASSWORD" "$LINE" | gzip -c >"${APP_DIR}/${LINE}".sql.gz
+            echo " done"
+        fi
+        let N=$N+1
+    done <"$DB_F"
+fi
+
+exit 0

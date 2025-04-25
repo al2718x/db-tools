@@ -1,0 +1,27 @@
+#!/bin/bash
+
+USER="user"
+PASSWORD="1"
+
+if [ "$#" -lt 1 ]; then
+    echo "use: $0 database-name"
+    exit 1
+fi
+
+NO_DATA=
+if [ -z "$2" ] || [ "$2" -eq 0 ]; then
+    NO_DATA=--no-data
+fi
+
+# mysqldump --user="$USER" --password="$PASSWORD" --no-data "$1" |
+mariadb-dump --user="$USER" --password="$PASSWORD" "$1" "$NO_DATA" |
+    sed 's/ AUTO_INCREMENT=[0-9]*\b//' |
+    sed 's/^-- MySQL dump.*$//' |
+    sed 's/^-- Host:.*$//' |
+    sed 's/^-- Server version.*$//' |
+    sed 's/^-- Dump completed on.*$//' |
+    sed 's/^\/\*![0-9]\{5\}.*$//g' |
+    sed 's/^DELIMITER ;\{1,2\}$//g' |
+    sed '/^[[:space:]]*$/d'
+
+exit 0
